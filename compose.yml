@@ -1,0 +1,5 @@
+services:
+  zibi-frontend:
+    build: .
+    ports:
+      - "80:80"
