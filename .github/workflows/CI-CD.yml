@@ -2,7 +2,7 @@ name: FE-CI/CD
 
 on:
   push:
-    branches: ["donguk"]
+    branches: ["CI/CD_Test"]
 
 jobs:
   build:
