@@ -92,9 +92,9 @@
                 class="flex items-center bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full"
             >
                 <span>
-                    {{ appliedFilters.priceMin ? appliedFilters.priceMin + '만원' : '' }}
+                    {{ appliedFilters.priceMin ? formatToEok(appliedFilters.priceMin) + '원' : '' }}
                     ~
-                    {{ appliedFilters.priceMax ? appliedFilters.priceMax + '만원' : '' }}
+                    {{ appliedFilters.priceMax ? formatToEok(appliedFilters.priceMax)+ '원' : '' }}
                 </span>
                 <button class="ml-1 font-bold" @click="removeFilter('price')">✕</button>
             </div>
@@ -251,7 +251,15 @@ const finalSubscriptions = computed(() => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    // // 1. 마감 공고 제거
+    const isExpired = (item) => {
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        const [, endRaw] = (item.application_period || '').split('~') || []
+        const endDate = new Date((endRaw || '').trim().replace(/\./g, '-'))
+        return endDate < today
+    }
+
+    // // 1. 마감 공고 제거 -> 테스트 시에는 마감 공고 제거 X
     // if (!props.showExpired) {
     //     result = result.filter((item) => {
     //         if (!item.application_period) return false
@@ -317,25 +325,45 @@ const finalSubscriptions = computed(() => {
         return new Date((startRaw || '').trim().replace(/\./g, '-'))
     }
 
-    switch (selectedFilter.value) {
-        case 'latest':
-            result.sort(
-                (a, b) =>
-                    parseStartDate(b.application_period) - parseStartDate(a.application_period),
-            )
-            break
-        case 'deadline-first':
-            result.sort(
-                (a, b) => parseEndDate(a.application_period) - parseEndDate(b.application_period),
-            )
-            break
-        case 'recommend':
-            result.sort((a, b) => (parseFloat(b.max_price) || 0) - (parseFloat(a.max_price) || 0))
-            break
-    }
+    result.sort((a, b) => {
+        // 마감된 공고는 항상 뒤로, 나중에 삭제할 부분
+        const aExpired = isExpired(a)
+        const bExpired = isExpired(b)
+        if (aExpired !== bExpired) {
+            return aExpired ? 1 : -1
+        }
+
+        // 정렬 기준
+        switch (selectedFilter.value) {
+            case 'latest':
+                return parseStartDate(a.application_period) - parseStartDate(b.application_period)
+            case 'deadline-first':
+                return parseEndDate(a.application_period) - parseEndDate(b.application_period)
+            case 'recommend':
+                return (parseFloat(b.max_price) || 0) - (parseFloat(a.max_price) || 0)
+            default:
+                return 0
+        }
+    })
 
     return result
 })
+
+const formatToEok = (priceValue) => {
+    if (priceValue == null) return ''
+
+    // 문자열이면 쉼표 제거
+    let num = priceValue
+    if (typeof priceValue === 'string') {
+        num = parseFloat(priceValue.replace(/,/g, ''))
+    }
+
+    if (isNaN(num)) return ''
+
+    // 서버 단위가 '만원'이므로 10,000으로 나눠야 '억' 단위가 됨
+    const eok = num / 10000
+    return `${eok.toFixed(1)}억`
+}
 // --- 스크롤 / 초기화 ---
 const hasActiveFilters = computed(
     () =>

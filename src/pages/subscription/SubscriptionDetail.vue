@@ -330,24 +330,6 @@ onMounted(async () => {
     // })
 })
 
-// // 임시 subscription 데이터
-// const subscription = {
-//     id: 1,
-//     title: '힐스테이트',
-//     type: '아파트',
-//     area: ['59', '74', '84'],
-//     householdCount: 175,
-//     address: '서울시 강남구 역삼동 123-45',
-//     viewCount: 10,
-//     favoriteCount: 100,
-//     price: '7억',
-//     lat: 37.50098, // 위도
-//     lng: 127.03654, // 경도
-// }
-
-// 다중 평수를 문자열로 포맷
-// const areaList = computed(() => subscription.area.map((a) => `${a}㎡`).join(' / '))
-
 // 날짜 포맷 함수
 function formatDate(dateString) {
     if (!dateString) return ''
@@ -386,6 +368,7 @@ const areaList = computed(() => {
     return min === max ? `${min.toFixed(1)}㎡` : `${min.toFixed(1)}㎡ ~ ${max.toFixed(1)}㎡`
 })
 
+// 모든 면적 보여주는 함수
 // const areaList = computed(() => {
 //     const types = subscription.value?.apt_type || subscription.value?.officetel_type
 //     if (!types || types.length === 0) return ''
@@ -402,15 +385,21 @@ const areaList = computed(() => {
 
 function calcBadge(start, end) {
     if (!start || !end) return ''
+
     const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
     const s = new Date(start.replace(/\./g, '-'))
     const e = new Date(end.replace(/\./g, '-'))
+    s.setHours(0, 0, 0, 0)
+    e.setHours(0, 0, 0, 0)
 
     if (today > e) return '마감'
     if (today < s) {
-        const diff = Math.ceil((e - today) / (1000 * 60 * 60 * 24))
+        const diff = Math.ceil((s - today) / (1000 * 60 * 60 * 24))
         return `D-${diff}`
     }
+    if (today.getTime() === e.getTime()) return '오늘 마감'
     return '진행중'
 }
 
@@ -461,7 +450,7 @@ function badgeColor(label) {
     }
 
     // 진행중
-    if (label === '진행중') {
+    if (label === '진행중' || label === '오늘 마감') {
         return 'bg-red-100 text-red-700'
     }
 
@@ -523,22 +512,22 @@ const formatToEok = (priceValue) => {
     return `${eok.toFixed(1)}억`
 }
 
-function normalizeAddress(addr) {
-    if (!addr) return ''
-    return addr
-        .replace(/외\s*\d+필지/, '') // "외 10필지"만 제거
-        .replace(/일원$/, '') // "일원" 글자만 제거
-        .replace(/번지/g, '')
-        .replace(/\s+/g, ' ') // 공백 정리
-        .trim()
-}
+// function normalizeAddress(addr) {
+//     if (!addr) return ''
+//     return addr
+//         .replace(/외\s*\d+필지/, '') // "외 10필지"만 제거
+//         .replace(/일원$/, '') // "일원" 글자만 제거
+//         .replace(/번지/g, '')
+//         .replace(/\s+/g, ' ') // 공백 정리
+//         .trim()
+// }
 
-function getAddressUpToRi(addr) {
-    if (!addr) return ''
-    const match = addr.match(/^(.*?리)/) // 처음 '리'까지 매칭
-    if (match) return match[1]
-    return addr
-}
+// function getAddressUpToRi(addr) {
+//     if (!addr) return ''
+//     const match = addr.match(/^(.*?리)/) // 처음 '리'까지 매칭
+//     if (match) return match[1]
+//     return addr
+// }
 
 // const openPromotionLink = () => {
 //     window.open('https://www.applyhome.co.kr/co/coa/selectMainView.do', '_blank')
@@ -562,7 +551,7 @@ function walkingTimeFromKm(km) {
         throw new Error('유효한 양의 숫자(km)를 입력해주세요.')
     }
 
-    const minutesPerKm = 14
+    const minutesPerKm = 12
     return Math.round(km * minutesPerKm)
 }
 </script>
