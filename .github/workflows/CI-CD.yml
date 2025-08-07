@@ -8,7 +8,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: 📢 깃허브 Checkout !!!
+      - name: 📢 깃허브 Checkout !!!!
         uses: actions/checkout@v3
 
       - name: 📢 Docker 이미지 빌드
